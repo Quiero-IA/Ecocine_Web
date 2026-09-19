@@ -1,20 +1,20 @@
-# Paso 1: Compilar la aplicación con Node.js usando trucos de ahorro de RAM
-FROM node:20-alpine AS build
+# Paso 1: Compilar usando Bun (El motor nativo de Lovable)
+FROM oven/bun:alpine AS build
 WORKDIR /app
 
-# Copiamos solo las listas de paquetes para aprovechar la memoria caché
+# Copiamos los archivos de configuración y el candado de Bun
 COPY package*.json ./
+COPY bun.lock* ./
 
-# Instalamos dependencias saltándonos auditorías pesadas para no saturar el servidor
-RUN npm install --no-audit --no-fund
-
-# Copiamos el resto de los archivos y compilamos la web
+# Instalamos y compilamos a la velocidad de la luz
+RUN bun install
 COPY . .
-RUN npm run build
+RUN bun run build
 
-# Paso 2: Servir la página con Nginx ligero (consume casi 0% de RAM)
+# Paso 2: Servidor ligero Nginx para producción
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+
